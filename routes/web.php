@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CacheTestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,3 +17,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('/cache', [CacheTestController::class, 'index'])->name('cache.index');
