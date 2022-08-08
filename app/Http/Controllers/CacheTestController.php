@@ -22,7 +22,7 @@ class CacheTestController extends Controller
         // $result = CacheTestService::usando_helper();
         // $result = CacheTestService::travar_chave();
         // $result = CacheTestService::trava_alternativa(); 
-        // $result = CacheTestService::tags();
+        $result = CacheTestService::tags();
         return response()->json($result ? $result : ['erro' => 'nenhuma mensagem disponível'], 200);
     }
 }

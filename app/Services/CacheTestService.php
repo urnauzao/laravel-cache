@@ -111,8 +111,8 @@ class CacheTestService
         $nome_conexao2 = self::NOME_CONEXAO_CACHE_ALTERNATIVO;
         $valor ??= 'conteúdo 2 vezes por semana.';
         $valor2 ??= 'Se inscreva ne canal.';
-        $resultado['cache_limpo'] = self::limpar_cache();
-        $resultado['cache_alternativo_limpo'] = self::limpar_cache($nome_conexao2);
+        // $resultado['cache_limpo'] = self::limpar_cache();
+        // $resultado['cache_alternativo_limpo'] = self::limpar_cache($nome_conexao2);
 
         /** CONEXAO 1 */
         $resultado['consulta_1'] = Cache::store($nome_conexao)->get($nome_da_chave);
@@ -123,7 +123,7 @@ class CacheTestService
         
         /** CONEXAO 2 */
         $resultado['consulta_3'] = Cache::store($nome_conexao2)->get($nome_da_chave);
-        Cache::store($nome_conexao2)->put($nome_da_chave, $valor);
+        Cache::store($nome_conexao2)->put($nome_da_chave, $valor." | conexao 2");
         $resultado['consulta_4'] = Cache::store($nome_conexao2)->get($nome_da_chave);
 
         return $resultado;
@@ -155,7 +155,7 @@ class CacheTestService
         $nome_da_chave_negativa ??= 'deslikes';
         $valor_de_incrementacao = rand(1,15);
         $valor_de_decrementacao = rand(1,3);
-        //$resultado['cache_limpo'] = self::limpar_cache();
+        // $resultado['cache_limpo'] = self::limpar_cache();
 
         $resultado[$nome_da_chave_positiva] = Cache::increment($nome_da_chave_positiva, $valor_de_incrementacao);
         $resultado[$nome_da_chave_negativa] = Cache::decrement($nome_da_chave_negativa, $valor_de_decrementacao);
@@ -176,7 +176,7 @@ class CacheTestService
 
     public static function salvar_tabela_cache():array{
         $nome_tabela = 'estados_brasil';
-        return ['valores_tabela' => Cache::get($nome_tabela)];
+        // return ['valores_tabela' => Cache::get($nome_tabela)];
         Cache::rememberForever($nome_tabela,  function () use ($nome_tabela) { // 2 minutos
             return DB::table($nome_tabela)->get();
         });
@@ -193,13 +193,13 @@ class CacheTestService
         Cache::put($nome_da_chave, $valor);
         $resultado['consulta_2'] = Cache::pull($nome_da_chave, 'valor padrão'); // pega e deleta
         $resultado['consulta_3'] = Cache::pull($nome_da_chave); // pega e deleta
-
+        // Cache::forget($nome_da_chave);
         return $resultado;
     }
 
     public static function salvar_valor():array{
         $resultado = [];
-        // return Cache::get(["put_com_ttl","put_sem_ttl","put_com_ttl_agendado","add_com_ttl","forever"]);
+        return Cache::get(["put_com_ttl","put_sem_ttl","put_com_ttl_agendado","add_com_ttl","forever"]);
         $resultado['cache_limpo'] = self::limpar_cache();
 
         $tempo_de_vida_em_segundos = 10; //10 segundos
@@ -233,26 +233,27 @@ class CacheTestService
         $resultado = cache()->getMultiple([
             "put_com_ttl","put_sem_ttl","put_com_ttl_agendado","add_com_ttl","forever",'teste','dev tech tips'
         ]); // retorna um Iterable
+        
         return (array) $resultado;
     }
 
     public static function travar_chave(){
         $donos = ['urnau', 'outros'];
         $dono = $donos[rand(0,1)];
-        $tempo_de_vida_em_segundos = 30;
+        $tempo_de_vida_em_segundos = 10;
         // self::limpar_cache();// não funciona para lock
         $lock = Cache::lock('qualquer_coisa', $tempo_de_vida_em_segundos, $dono);
         $resultado = null;
         if ($lock->get()) {
             $resultado = 'destravado';
-            $lock->release(); // remove a trava
+            // $lock->release(); // remove a trava
         }
 
         $resultado2 = [];
         $times = [];
         $times[] = now()->toDateTimeString();
         try {
-            $lock->block(5);
+            $lock->block(20);
             $resultado2[] = 'block';
             $times[] = now()->toDateTimeString();
             // Lock acquired after waiting a maximum of 5 seconds...
@@ -271,11 +272,11 @@ class CacheTestService
 
     }
 
-    /** @deprecated Não funcionou adequadamente */
     public static function trava_alternativa(){
-        // não funcionou
         $resultado = null;
-        $lock = Cache::lock('alfa', 10)->block(5, function (){
+        $lock = Cache::lock('alfa', 10);
+        $lock->get();
+        $lock = Cache::lock('alfa', 5)->block(20, function () use (&$resultado){
             $resultado = true;
             return 'ok';
         });
@@ -290,13 +291,13 @@ class CacheTestService
         Cache::tags(['pessoa', 'humoristas'])->put('Karina', "mulher", $tempo_de_vida_em_segundos);
         Cache::tags(['pessoa'])->put('Jandira', "mulher", $tempo_de_vida_em_segundos);
 
-        $resultados['consulta_1'] = Cache::tags(['pessoa', 'humoristas'])->get('Alberto');
-        $resultados['consulta_2'] = Cache::tags(['pessoa'])->get('Alberto');
-        $resultados['consulta_3'] = Cache::tags([ 'humoristas'])->get('Karina');
-        $resultados['consulta_4'] = Cache::tags('humoristas')->get('Karina');
-        $resultados['consulta_5'] = Cache::tags(['pessoa'])->get('Jandira');
-        $resultados['consulta_6'] = Cache::tags([ 'humoristas', 'pessoa'])->get('Karina');
-        $resultados['consulta_7'] = Cache::tags([ 'pessoa', 'humoristas' ])->get('Karina');
+        $resultados['consulta_1'] = Cache::tags(['pessoa', 'humoristas'])->get('Alberto'); //null
+        $resultados['consulta_2'] = Cache::tags(['pessoa'])->get('Alberto'); //null
+        $resultados['consulta_3'] = Cache::tags([ 'humoristas'])->get('Karina'); //null
+        $resultados['consulta_4'] = Cache::tags('humoristas')->get('Karina'); //null
+        $resultados['consulta_5'] = Cache::tags(['pessoa'])->get('Jandira'); //mulher
+        $resultados['consulta_6'] = Cache::tags([ 'humoristas', 'pessoa'])->get('Karina'); //null
+        $resultados['consulta_7'] = Cache::tags([ 'pessoa', 'humoristas' ])->get('Karina'); //mulher
         return $resultados;
     }
 
